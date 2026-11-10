@@ -7,6 +7,7 @@
 **Members:** Winston Ta (backend), Rishabh Vira (frontend), Alina Zheng (frontend-Anthropic presentation), Chandu Siram (ideation, APIs, legal auditing) 
 **Lane:** 2 Clear it
 **Built at:** Claude Impact Lab: UCI × SoCal Affordable Housing, November 7, 2026
+**Live demo:** [house-max-sepia.vercel.app](https://house-max-sepia.vercel.app/)
 
 > **Prototype only. Not legal advice.** Verdicts are "likely" outcomes based on the written rules encoded here.
 > Final determination rests with city staff. Nothing in this tool files an application or contacts a city.
@@ -35,9 +36,16 @@ A Next.js 16 app (`frontend/`) with a backend in the same app (`frontend/app/api
 | Two-Clock Ledger | ADU statutory clocks (15 business days to completeness, 60 days to decide, § 66317(a)(2)–(3)) next to real permit-to-occupancy medians from HCD APR data. |
 | Draft packet PDF | 4-page draft rendered on the server (`@react-pdf/renderer`): cover, spec matrix, applicant's statement citing only the rules relied on, pre-flight checklist. Watermarked DRAFT on every page. |
 
-**Demo video:**
+## Demo
 
-[Demo Video](https://github.com/rvira/HouseMax/blob/main/byright-demo.mp4)
+**Try it live:** [house-max-sepia.vercel.app](https://house-max-sepia.vercel.app/)
+
+**Promo video (60 s):** click the poster to watch.
+
+[![Byright promo video](docs/byright-promo-poster.png)](byright-promo.mp4)
+
+
+**Walkthrough video:** [byright-demo.mp4](byright-demo.mp4)
 
 ### Demo walkthrough
 
