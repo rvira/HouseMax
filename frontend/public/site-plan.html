@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Byright · ADU Site Plan (3D)</title>
+<style>
+  :root { --ink:#0f172a; --ink2:#475569; --muted:#94a3b8; --teal:#14b8a6; --red:#ef4444; --ok:#0ca30c; }
+  * { box-sizing: border-box; }
+  html, body { margin:0; height:100%; overflow:hidden; background:#f3f4f6; font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); -webkit-font-smoothing:antialiased; }
+  #stage { position:fixed; inset:0; }
+  #stage canvas { display:block; outline:none; }
+  .label { pointer-events:none; white-space:nowrap; font-size:11px; font-weight:600; letter-spacing:.01em; color:var(--ink2);
+    background:rgba(255,255,255,.88); border:1px solid rgba(15,23,42,.08); padding:3px 7px; border-radius:6px; box-shadow:0 2px 6px rgba(15,23,42,.06); }
+  .label.dim { font-weight:500; color:var(--muted); background:rgba(255,255,255,.7); }
+  .label.adu { color:#0f766e; border-color:rgba(20,184,166,.35); }
+  .label.adu.bad { color:#b91c1c; border-color:rgba(239,68,68,.45); }
+  .label.setback { color:#b91c1c; background:rgba(254,242,242,.92); border-color:rgba(239,68,68,.25); }
+  #hud { position:fixed; top:16px; left:16px; z-index:5; display:flex; flex-direction:column; gap:8px; max-width:320px; }
+  .card { background:rgba(255,255,255,.92); backdrop-filter:blur(10px); border:1px solid rgba(15,23,42,.08); border-radius:14px; padding:12px 14px; box-shadow:0 8px 24px -12px rgba(15,23,42,.25); }
+  #status { display:flex; align-items:flex-start; gap:10px; transition:background .3s, border-color .3s; }
+  #status .dot { width:10px; height:10px; border-radius:50%; margin-top:4px; flex:none; background:var(--ok); box-shadow:0 0 0 4px rgba(12,163,12,.15); }
+  #status.bad { background:rgba(254,242,242,.95); border-color:rgba(239,68,68,.4); }
+  #status.bad .dot { background:var(--red); box-shadow:0 0 0 4px rgba(239,68,68,.2); animation:pulse 1s infinite; }
+  #status h1 { margin:0; font-size:13px; font-weight:700; }
+  #status p { margin:2px 0 0; font-size:12px; color:var(--ink2); line-height:1.35; }
+  @keyframes pulse { 50% { box-shadow:0 0 0 8px rgba(239,68,68,0); } }
+  #legend { display:grid; grid-template-columns:auto 1fr; gap:6px 8px; align-items:center; font-size:11.5px; color:var(--ink2); }
+  #legend i { width:12px; height:12px; border-radius:3px; display:inline-block; }
+  #tools { position:fixed; right:16px; bottom:16px; z-index:5; display:flex; gap:8px; }
+  button { font:600 12px ui-sans-serif,system-ui,sans-serif; color:var(--ink); background:#fff; border:1px solid rgba(15,23,42,.12); border-radius:10px; padding:8px 12px; cursor:pointer; box-shadow:0 2px 6px rgba(15,23,42,.06); }
+  button:hover { background:#f8fafc; }
+  #hint { position:fixed; left:50%; bottom:16px; transform:translateX(-50%); z-index:5; font-size:11.5px; color:var(--ink2); background:rgba(255,255,255,.85); border:1px solid rgba(15,23,42,.08); border-radius:999px; padding:6px 14px; }
+  #fallback { position:fixed; inset:0; display:none; place-items:center; text-align:center; padding:24px; color:var(--ink2); font-size:14px; }
+  body.embed #legend-card, body.embed #hint { display:none; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<div id="hud">
+  <div id="status" class="card" role="status" aria-live="polite">
+    <span class="dot"></span>
+    <div><h1 id="status-title">Zoning check: compliant</h1><p id="status-body">ADU sits entirely inside the buildable area.</p></div>
+  </div>
+  <div id="legend-card" class="card">
+    <div id="legend">
+      <i style="background:#e5e7eb;border:1.5px solid #1f2937"></i><span>Lot boundary</span>
+      <i style="background:#ffffff;border:1px solid #cbd5e1"></i><span>Primary residence</span>
+      <i style="background:rgba(239,68,68,.35)"></i><span>Setback buffer (no-build)</span>
+      <i style="background:rgba(20,184,166,.6)"></i><span>Proposed ADU</span>
+    </div>
+  </div>
+</div>
+<div id="hint">Drag the ADU to move it · Drag to orbit · Right-drag to pan · Scroll to zoom</div>
+<div id="tools"><button id="reset" type="button">Reset view</button></div>
+<div id="fallback">WebGL is not available in this browser, so the 3D site plan can't be displayed.</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://unpkg.com/three@0.170.0/build/three.module.js",
+  "three/addons/": "https://unpkg.com/three@0.170.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+
+/* ------------------------------------------------------------------ *
+ *  Units: 1 scene unit = 1 foot.  Lot centered on the origin.
+ *  x: across the lot width (left side line = -W/2)
+ *  z: along the lot length (street / front line = +L/2, rear line = -L/2)
+ * ------------------------------------------------------------------ */
+
+const DEFAULTS = {
+  lotWidth: 60, lotLength: 120,
+  primaryWidth: 34, primaryLength: 42,
+  aduWidth: 20, aduLength: 28,
+  rearSetback: 4, sideSetback: 4,
+  // Optional extras (not required by the core API)
+  frontSetback: 20, primaryHeight: 22, aduHeight: 16,
+  aduSideOffset: 20, // ft from left side line to the ADU's left wall
+  aduRearOffset: 8,  // ft from rear line to the ADU's rear wall
+};
+
+const params = new URLSearchParams(location.search);
+if (params.get("embed") === "1") document.body.classList.add("embed");
+
+/* ---------- Renderer, scene, camera ---------- */
+const stage = document.getElementById("stage");
+let renderer;
+try {
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+} catch (err) {
+  document.getElementById("fallback").style.display = "grid";
+  throw err;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(innerWidth, innerHeight);
+Object.assign(labelRenderer.domElement.style, { position: "absolute", inset: "0", pointerEvents: "none" });
+stage.appendChild(labelRenderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color("#f3f4f6");
+scene.fog = new THREE.Fog("#f3f4f6", 420, 900);
+
+const camera = new THREE.PerspectiveCamera(38, innerWidth / innerHeight, 1, 3000);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.08;
+controls.maxPolarAngle = Math.PI * 0.47;
+controls.minDistance = 40;
+controls.maxDistance = 600;
+
+/* ---------- Studio lighting ---------- */
+scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd8dce3, 0.45));
+const sun = new THREE.DirectionalLight(0xffffff, 2.1);
+sun.position.set(-90, 160, 110);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.6;
+sun.shadow.radius = 4;
+scene.add(sun, sun.target);
+
+/* ---------- Static ground ---------- */
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.ShadowMaterial({ opacity: 0.12 }));
+ground.rotation.x = -Math.PI / 2;
+ground.position.y = -0.02;
+ground.receiveShadow = true;
+scene.add(ground);
+const grid = new THREE.GridHelper(1000, 100, 0xdfe2e7, 0xe7e9ed);
+grid.position.y = -0.03;
+scene.add(grid);
+
+/* ---------- Materials ---------- */
+const M = {
+  lot: new THREE.MeshStandardMaterial({ color: "#e5e7eb", roughness: 1 }),
+  boundary: new THREE.LineBasicMaterial({ color: "#1f2937" }),
+  house: new THREE.MeshStandardMaterial({ color: "#ffffff", roughness: 0.85, metalness: 0 }),
+  houseEdge: new THREE.LineBasicMaterial({ color: "#94a3b8" }),
+  setback: new THREE.MeshBasicMaterial({ color: "#ef4444", transparent: true, opacity: 0.22, depthWrite: false }),
+  setbackEdge: new THREE.LineDashedMaterial({ color: "#ef4444", dashSize: 2, gapSize: 1.4 }),
+  adu: new THREE.MeshStandardMaterial({ color: "#14b8a6", roughness: 0.4, transparent: true, opacity: 0.62, emissive: "#000000" }),
+  aduEdge: new THREE.LineBasicMaterial({ color: "#0f766e" }),
+};
+const TEAL = new THREE.Color("#14b8a6");
+const WARN = new THREE.Color("#ef4444");
+const TEAL_EDGE = new THREE.Color("#0f766e");
+const WARN_EDGE = new THREE.Color("#b91c1c");
+
+/* ---------- Unit meshes (scaled in updateScene) ---------- */
+const unitBox = new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0); // base sits on y=0
+const unitBoxEdges = new THREE.EdgesGeometry(unitBox);
+const unitPlane = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+
+function boxWithEdges(mat, edgeMat) {
+  const g = new THREE.Group();
+  const mesh = new THREE.Mesh(unitBox, mat);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  g.add(mesh, new THREE.LineSegments(unitBoxEdges, edgeMat));
+  g.userData.mesh = mesh;
+  return g;
+}
+
+// 1. Lot boundary
+const lot = new THREE.Mesh(unitPlane, M.lot);
+lot.receiveShadow = true;
+const boundary = new THREE.LineLoop(new THREE.BufferGeometry(), M.boundary);
+scene.add(lot, boundary);
+
+// 2. Primary residence (body + low-pitch roof slab for a maquette read)
+const house = boxWithEdges(M.house, M.houseEdge);
+const roof = boxWithEdges(M.house, M.houseEdge);
+scene.add(house, roof);
+
+// 3. Setback buffers: left, right, rear
+const setbacks = ["left", "right", "rear"].map((side) => {
+  const plane = new THREE.Mesh(unitPlane, M.setback.clone());
+  plane.renderOrder = 1;
+  const edge = new THREE.LineLoop(new THREE.BufferGeometry(), M.setbackEdge);
+  scene.add(plane, edge);
+  return { side, plane, edge };
+});
+
+// 4. Proposed ADU
+const adu = boxWithEdges(M.adu, M.aduEdge);
+adu.userData.mesh.renderOrder = 2;
+scene.add(adu);
+
+/* ---------- Labels ---------- */
+function label(cls) {
+  const el = document.createElement("div");
+  el.className = "label " + cls;
+  const obj = new CSS2DObject(el);
+  scene.add(obj);
+  return obj;
+}
+const L = {
+  width: label("dim"), length: label("dim"), house: label(""), adu: label("adu"),
+  rear: label("setback"), side: label("setback"),
+};
+
+/* ---------- Helpers ---------- */
+const num = (v, fallback) => (Number.isFinite(+v) && +v >= 0 ? +v : fallback);
+function rectLine(geom, minX, maxX, minZ, maxZ, y) {
+  geom.setFromPoints([
+    new THREE.Vector3(minX, y, minZ), new THREE.Vector3(maxX, y, minZ),
+    new THREE.Vector3(maxX, y, maxZ), new THREE.Vector3(minX, y, maxZ),
+  ]);
+}
+function placePlane(mesh, minX, maxX, minZ, maxZ, y) {
+  mesh.scale.set(Math.max(0.001, maxX - minX), 1, Math.max(0.001, maxZ - minZ));
+  mesh.position.set((minX + maxX) / 2, y, (minZ + maxZ) / 2);
+  mesh.visible = maxX - minX > 0.01 && maxZ - minZ > 0.01;
+}
+const overlaps = (a, b) => a.minX < b.maxX - 1e-6 && a.maxX > b.minX + 1e-6 && a.minZ < b.maxZ - 1e-6 && a.maxZ > b.minZ + 1e-6;
+
+/* ---------- Config (live) ---------- */
+let state = { ...DEFAULTS };
+let status = { violating: false, violations: [] };
+
+/**
+ * Rebuilds the scene from window.ADU_CONFIG (or a partial patch).
+ * All meshes are unit-sized and simply re-scaled/re-positioned, so updates are instant.
+ */
+function updateScene(patch) {
+  if (patch && typeof patch === "object") Object.assign(raw, patch);
+  const c = {};
+  for (const k of Object.keys(DEFAULTS)) c[k] = num(raw[k], DEFAULTS[k]);
+  c.lotWidth = Math.max(10, c.lotWidth);
+  c.lotLength = Math.max(10, c.lotLength);
+  c.sideSetback = Math.min(c.sideSetback, c.lotWidth / 2);
+  c.rearSetback = Math.min(c.rearSetback, c.lotLength);
+  state = c;
+
+  const W = c.lotWidth, Ln = c.lotLength;
+  const left = -W / 2, right = W / 2, rear = -Ln / 2, front = Ln / 2;
+
+  // Lot
+  placePlane(lot, left, right, rear, front, 0);
+  rectLine(boundary.geometry, left, right, rear, front, 0.06);
+
+  // Primary residence: centered across the lot, set back from the street
+  const pw = Math.min(c.primaryWidth, W), pl = Math.min(c.primaryLength, Ln);
+  const pz = Math.min(front - c.frontSetback - pl / 2, front - pl / 2);
+  house.scale.set(pw, c.primaryHeight, pl);
+  house.position.set(0, 0, pz);
+  roof.scale.set(pw + 2, 1.2, pl + 2);
+  roof.position.set(0, c.primaryHeight, pz);
+  const houseRect = { minX: -pw / 2, maxX: pw / 2, minZ: pz - pl / 2, maxZ: pz + pl / 2 };
+
+  // Setback buffer zones
+  const zones = {
+    left:  { minX: left, maxX: left + c.sideSetback, minZ: rear, maxZ: front },
+    right: { minX: right - c.sideSetback, maxX: right, minZ: rear, maxZ: front },
+    rear:  { minX: left, maxX: right, minZ: rear, maxZ: rear + c.rearSetback },
+  };
+  for (const s of setbacks) {
+    const z = zones[s.side];
+    placePlane(s.plane, z.minX, z.maxX, z.minZ, z.maxZ, 0.04 + (s.side === "rear" ? 0.01 : 0));
+    rectLine(s.edge.geometry, z.minX, z.maxX, z.minZ, z.maxZ, 0.08);
+    s.edge.computeLineDistances();
+    s.edge.visible = s.plane.visible;
+  }
+
+  // ADU (backyard). Offsets are measured from the left side line and the rear line.
+  const aw = c.aduWidth, al = c.aduLength;
+  const ax = left + c.aduSideOffset + aw / 2;
+  const az = rear + c.aduRearOffset + al / 2;
+  adu.scale.set(aw, c.aduHeight, al);
+  adu.position.set(ax, 0, az);
+  const aduRect = { minX: ax - aw / 2, maxX: ax + aw / 2, minZ: az - al / 2, maxZ: az + al / 2 };
+
+  // Zoning check
+  const v = [];
+  if (overlaps(aduRect, zones.rear)) v.push(`Rear setback (${c.rearSetback} ft)`);
+  if (overlaps(aduRect, zones.left) || overlaps(aduRect, zones.right)) v.push(`Side setback (${c.sideSetback} ft)`);
+  if (aduRect.minX < left || aduRect.maxX > right || aduRect.minZ < rear || aduRect.maxZ > front) v.push("Outside the lot line");
+  if (overlaps(aduRect, houseRect)) v.push("Overlaps the primary residence");
+  status = { violating: v.length > 0, violations: v };
+  for (const s of setbacks) {
+    const hit = overlaps(aduRect, zones[s.side]);
+    s.plane.material.opacity = hit ? 0.42 : 0.22;
+  }
+
+  // Labels
+  L.width.position.set(0, 0.5, front + 5);
+  L.width.element.textContent = `${W} ft frontage`;
+  L.length.position.set(right + 6, 0.5, 0);
+  L.length.element.textContent = `${Ln} ft depth`;
+  L.house.position.set(0, c.primaryHeight + 4, pz);
+  L.house.element.textContent = "Primary residence";
+  L.adu.position.set(ax, c.aduHeight + 4, az);
+  L.adu.element.textContent = `ADU ${aw}′ × ${al}′ · ${Math.round(aw * al).toLocaleString("en-US")} sf`;
+  L.adu.element.classList.toggle("bad", status.violating);
+  L.rear.position.set(0, 0.5, rear + c.rearSetback / 2);
+  L.rear.element.textContent = `Rear setback ${c.rearSetback}′`;
+  L.rear.visible = c.rearSetback > 0;
+  L.side.position.set(left + c.sideSetback / 2, 0.5, rear + Ln * 0.18);
+  L.side.element.textContent = `Side ${c.sideSetback}′`;
+  L.side.visible = c.sideSetback > 0;
+
+  // Shadow camera covers the lot
+  const half = Math.max(W, Ln) * 0.75 + 20;
+  Object.assign(sun.shadow.camera, { left: -half, right: half, top: half, bottom: -half, near: 1, far: 600 });
+  sun.shadow.camera.updateProjectionMatrix();
+
+  // HUD + notify host page
+  const st = document.getElementById("status");
+  st.classList.toggle("bad", status.violating);
+  document.getElementById("status-title").textContent = status.violating ? "Zoning violation" : "Zoning check: compliant";
+  document.getElementById("status-body").textContent = status.violating
+    ? status.violations.join(" · ")
+    : "ADU sits entirely inside the buildable area.";
+  if (window.parent !== window) {
+    window.parent.postMessage({ type: "adu-status", ...status, config: { ...state } }, location.origin);
+  }
+  return status;
+}
+
+/* window.ADU_CONFIG is live: assigning any field re-renders instantly. */
+const raw = { ...DEFAULTS };
+window.ADU_CONFIG = new Proxy(raw, {
+  set(target, key, value) {
+    target[key] = value;
+    queueMicrotask(() => updateScene());
+    return true;
+  },
+});
+window.updateScene = updateScene;
+window.getAduStatus = () => ({ ...status, config: { ...state } });
+
+// Host page can also post { type: "adu-config", config: {...} }
+window.addEventListener("message", (e) => {
+  if (e.origin !== location.origin) return;
+  if (e.data && e.data.type === "adu-config" && e.data.config) updateScene(e.data.config);
+});
+
+/* ---------- Drag the ADU across the ground plane ---------- */
+const ray = new THREE.Raycaster();
+const pointer = new THREE.Vector2();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const hitPoint = new THREE.Vector3();
+let drag = null;
+
+function setPointer(e) {
+  const r = renderer.domElement.getBoundingClientRect();
+  pointer.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+  ray.setFromCamera(pointer, camera);
+}
+renderer.domElement.addEventListener("pointerdown", (e) => {
+  if (e.button !== 0) return;
+  setPointer(e);
+  if (ray.intersectObject(adu.userData.mesh).length && ray.ray.intersectPlane(groundPlane, hitPoint)) {
+    drag = { dx: hitPoint.x - adu.position.x, dz: hitPoint.z - adu.position.z };
+    controls.enabled = false;
+    renderer.domElement.setPointerCapture(e.pointerId);
+    renderer.domElement.style.cursor = "grabbing";
+  }
+});
+renderer.domElement.addEventListener("pointermove", (e) => {
+  setPointer(e);
+  if (!drag) {
+    renderer.domElement.style.cursor = ray.intersectObject(adu.userData.mesh).length ? "grab" : "";
+    return;
+  }
+  if (!ray.ray.intersectPlane(groundPlane, hitPoint)) return;
+  const c = state;
+  const cx = hitPoint.x - drag.dx, cz = hitPoint.z - drag.dz;
+  const left = -c.lotWidth / 2, rear = -c.lotLength / 2;
+  // Keep the ADU on the lot (it may still enter setbacks — that's the point of the check)
+  const side = THREE.MathUtils.clamp(cx - c.aduWidth / 2 - left, 0, Math.max(0, c.lotWidth - c.aduWidth));
+  const back = THREE.MathUtils.clamp(cz - c.aduLength / 2 - rear, 0, Math.max(0, c.lotLength - c.aduLength));
+  updateScene({ aduSideOffset: Math.round(side * 2) / 2, aduRearOffset: Math.round(back * 2) / 2 });
+});
+const endDrag = (e) => {
+  if (!drag) return;
+  drag = null;
+  controls.enabled = true;
+  renderer.domElement.style.cursor = "";
+  if (renderer.domElement.hasPointerCapture(e.pointerId)) renderer.domElement.releasePointerCapture(e.pointerId);
+};
+renderer.domElement.addEventListener("pointerup", endDrag);
+renderer.domElement.addEventListener("pointercancel", endDrag);
+
+/* ---------- Camera framing ---------- */
+function frame() {
+  const s = Math.max(state.lotWidth, state.lotLength);
+  camera.position.set(s * 0.85, s * 0.95, s * 1.05);
+  controls.target.set(0, 0, 0);
+  controls.update();
+}
+document.getElementById("reset").addEventListener("click", frame);
+
+addEventListener("resize", () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+  labelRenderer.setSize(innerWidth, innerHeight);
+});
+
+/* ---------- Render loop (violation flash) ---------- */
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const t = clock.getElapsedTime();
+  if (status.violating) {
+    const k = 0.55 + 0.45 * Math.sin(t * 7);           // ~1.1 Hz flash
+    M.adu.color.copy(WARN);
+    M.adu.emissive.copy(WARN).multiplyScalar(0.25 + 0.35 * k);
+    M.adu.opacity = 0.55 + 0.3 * k;
+    M.aduEdge.color.copy(WARN_EDGE);
+  } else {
+    M.adu.color.copy(TEAL);
+    M.adu.emissive.setRGB(0, 0, 0);
+    M.adu.opacity = 0.62;
+    M.aduEdge.color.copy(TEAL_EDGE);
+  }
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+});
+
+// Initial config from the URL, e.g. ?lotWidth=50&aduWidth=24
+for (const k of Object.keys(DEFAULTS)) if (params.has(k)) raw[k] = params.get(k);
+updateScene();
+frame();
+window.dispatchEvent(new CustomEvent("adu-ready"));
+if (window.parent !== window) window.parent.postMessage({ type: "adu-ready" }, location.origin);
+</script>
+</body>
+</html>

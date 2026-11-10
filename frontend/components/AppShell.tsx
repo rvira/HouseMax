@@ -5,9 +5,12 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion, MotionConfig } from "motion/react";
 import {
   BookOpenCheck,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   FileText,
   Gauge,
+  Map as MapIcon,
   Menu,
   Radar,
   Repeat2,
@@ -15,8 +18,12 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ProjectProvider, useProject } from "@/lib/store";
+import { useSceneStore } from "@/lib/scene/store";
+import { VIEWS, viewForPath } from "@/lib/scene/views";
+import { SceneBridge } from "./stage/SceneBridge";
+import { SceneStage } from "./stage/SceneStage";
 import { DEMO_PROJECTS, getCity } from "@/lib/data";
 import { VerdictChip } from "./VerdictBanner";
 import { cn } from "./ui/primitives";
@@ -26,6 +33,7 @@ const NAV = [
   { href: "/intake", label: "Intake & Verdict", icon: ClipboardList, step: 1 },
   { href: "/conflicts", label: "Conflict Radar", icon: Radar, step: 2 },
   { href: "/flip", label: "By-Right Flip", icon: Repeat2, step: 2 },
+  { href: "/site-plan", label: "3D Site Plan", icon: MapIcon, step: null },
   { href: "/clocks", label: "Two-Clock Ledger", icon: Timer, step: null },
   { href: "/package", label: "Submittal Package", icon: FileText, step: 3 },
   { href: "/registry", label: "Requirements Registry", icon: BookOpenCheck, step: null },
@@ -129,6 +137,68 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
   );
 }
 
+/**
+ * Scrollable 2D panel floating over the canvas (lg+). Reports the width it covers to the scene store so the
+ * camera can re-centre the lot in the visible area. It is a size container, so page grids use @container
+ * breakpoints and reflow to the panel, not the viewport.
+ */
+function ContentPanel({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const mode = VIEWS[viewForPath(pathname)].panel;
+  const ref = useRef<HTMLDivElement>(null);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const lg = window.matchMedia("(min-width: 1024px)");
+    const measure = () => useSceneStore.getState().setPanelInset(lg.matches && !collapsed ? el.offsetWidth : 0);
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    lg.addEventListener("change", measure);
+    measure();
+    return () => {
+      ro.disconnect();
+      lg.removeEventListener("change", measure);
+    };
+  }, [collapsed]);
+
+  return (
+    <>
+      <main
+        ref={ref}
+        id="content"
+        className={cn(
+          "@container relative z-30 min-h-0 flex-1 overflow-y-auto bg-plane",
+          "lg:absolute lg:inset-y-0 lg:left-0 lg:border-r lg:border-black/[0.06] lg:bg-plane/85 lg:shadow-[8px_0_32px_-16px_rgba(0,0,0,0.18)] lg:backdrop-blur-xl",
+          "transition-[width,transform] duration-500 ease-out motion-reduce:transition-none",
+          "print:static print:w-full print:overflow-visible print:bg-white",
+          mode === "narrow" ? "lg:w-[420px]" : "lg:w-[min(880px,62%)]",
+          collapsed && "lg:-translate-x-full",
+        )}
+        aria-hidden={collapsed || undefined}
+        inert={collapsed || undefined}
+      >
+        {children}
+      </main>
+      <button
+        type="button"
+        onClick={() => setCollapsed((c) => !c)}
+        className={cn(
+          "no-print absolute top-4 z-40 hidden items-center gap-1 rounded-r-lg border border-l-0 border-black/[0.08] bg-white/90 py-2 pl-1 pr-1.5 text-xs font-medium text-ink-2 shadow-sm backdrop-blur transition-[left] duration-500 ease-out hover:text-ink lg:flex",
+          collapsed ? "left-0" : mode === "narrow" ? "left-[420px]" : "left-[min(880px,62%)]",
+        )}
+        aria-label={collapsed ? "Show panel" : "Hide panel to explore the 3D model"}
+        aria-controls="content"
+        aria-expanded={!collapsed}
+      >
+        {collapsed ? <ChevronRight className="size-4" /> : <ChevronLeft className="size-4" />}
+        {collapsed && "Panel"}
+      </button>
+    </>
+  );
+}
+
 function Shell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   return (
@@ -166,10 +236,17 @@ function Shell({ children }: { children: ReactNode }) {
           </>
         )}
       </AnimatePresence>
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex h-dvh min-w-0 flex-1 flex-col print:h-auto">
         <TopBar onMenu={() => setOpen(true)} />
-        <main className="flex-1">{children}</main>
+        {/* Persistent 3D stage behind, route content in a floating panel on top (stacked on small screens). */}
+        <div className="relative flex min-h-0 flex-1 flex-col lg:block print:block">
+          <div className="no-print relative h-[42vh] shrink-0 border-b border-black/[0.06] lg:absolute lg:inset-0 lg:h-auto lg:border-0">
+            <SceneStage />
+          </div>
+          <ContentPanel>{children}</ContentPanel>
+        </div>
       </div>
+      <SceneBridge />
     </div>
   );
 }

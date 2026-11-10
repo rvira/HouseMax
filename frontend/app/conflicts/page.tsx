@@ -82,7 +82,7 @@ export default function ConflictsPage() {
         </div>
       )}
 
-      <motion.div variants={stagger} className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <motion.div variants={stagger} className="grid grid-cols-1 gap-4 @xl:grid-cols-3">
         {(["SUBSTANTIVE_CONFLICT", "STALE_CITATION", "NONE"] as ConflictType[]).map((t) => {
           const m = TYPE_META[t];
           return (
@@ -107,7 +107,7 @@ export default function ConflictsPage() {
         })}
       </motion.div>
 
-      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[360px_1fr]">
+      <div className="mt-5 grid grid-cols-1 gap-5 @4xl:grid-cols-[360px_1fr]">
         <Card className="p-5">
           <div className="mb-3 flex items-center gap-2">
             <Radar className="size-4 text-brand-600" />
@@ -147,7 +147,7 @@ export default function ConflictsPage() {
                         : `— ILLUSTRATIVE example, not taken from ${city.name}'s actual checklist`}
                     </p>
 
-                    <div className="mt-5 grid grid-cols-1 items-center gap-3 sm:grid-cols-[1fr_auto_1fr]">
+                    <div className="mt-5 grid grid-cols-1 items-center gap-3 @xl:grid-cols-[1fr_auto_1fr]">
                       <div className="rounded-xl bg-plane p-3 ring-1 ring-hairline">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-muted">Cited by city</p>
                         <p className={cn("mt-1 font-mono text-[12.5px]", active.legacy_citation !== "None" && active.legacy_citation !== active.governing_state_statute ? "text-ink-2 line-through decoration-critical/60" : "text-ink")}>
@@ -228,7 +228,7 @@ export default function ConflictsPage() {
       {/* Discretion Detector */}
       <Card className="mt-5">
         <CardHeader title="Discretion Detector" subtitle="Language that can turn a ministerial project discretionary. Found by the backend scan; leads for human review, not legal conclusions." icon={ScanSearch} />
-        <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2 lg:grid-cols-3">
+        <motion.div variants={stagger} initial="hidden" animate="show" className="grid grid-cols-1 gap-3 p-5 @xl:grid-cols-2 @4xl:grid-cols-3">
           {TRIGGERS.map((t) => {
             const hitAudit = audit?.data?.items.find((a) => a.discretion_flags.some((f) => f.trigger === t.key));
             const hit = hitAudit ? items.find((i) => i.item_id === hitAudit.item_id) : undefined;

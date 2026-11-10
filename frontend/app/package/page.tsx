@@ -87,7 +87,7 @@ export default function PackagePage() {
         description="Pre-flight every city checklist item, then generate the audit-ready application with the statutory preemption addendum."
       />
 
-      <div className="no-print grid grid-cols-1 gap-5 lg:grid-cols-[1fr_320px]">
+      <div className="no-print grid grid-cols-1 gap-5 @4xl:grid-cols-[1fr_320px]">
         <Card>
           <CardHeader title="Pre-flight completeness check" subtitle={`${city.name} · ${checklist?.checklist_id ?? "no checklist"}`} icon={FileCheck2} />
           <ul className="space-y-1.5 p-4">

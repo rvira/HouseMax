@@ -5,6 +5,12 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    // R3F scene code mutates three.js objects imperatively (material uniforms, controls, renderer flags) inside
+    // frame loops and event handlers — the idiomatic way to animate without React re-renders.
+    files: ["components/scene/**"],
+    rules: { "react-hooks/immutability": "off" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

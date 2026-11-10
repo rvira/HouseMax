@@ -73,7 +73,7 @@ export default function RegistryPage() {
 
       <AnimatePresence mode="wait">
         {tab === "checklists" ? (
-          <motion.div key="cl" variants={stagger} initial="hidden" animate="show" exit={{ opacity: 0 }} className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <motion.div key="cl" variants={stagger} initial="hidden" animate="show" exit={{ opacity: 0 }} className="grid grid-cols-1 gap-4 @2xl:grid-cols-2 @5xl:grid-cols-3">
             {rows.length === 0 && <p className="text-sm text-ink-2">No matches.</p>}
             {rows.map(({ city, kind, cl }) => {
               const conflicts = cl.items.filter((i) => i.conflict_type === "SUBSTANTIVE_CONFLICT").length;

@@ -81,7 +81,7 @@ ${project.applicant.email} · ${project.applicant.phone}
         }
       />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 @4xl:grid-cols-2">
         <Card>
           <CardHeader title="Statutory shot clock" subtitle="Legally binding deadlines" icon={Scale} right={<Badge tone="brand">Law</Badge>} />
           <div className="grid grid-cols-2 gap-4 p-6">
@@ -125,8 +125,8 @@ ${project.applicant.email} · ${project.applicant.phone}
         </Card>
       </div>
 
-      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
+      <div className="mt-5 grid grid-cols-1 gap-5 @4xl:grid-cols-5">
+        <Card className="@4xl:col-span-3">
           <CardHeader title="Permit → occupancy, median days by city" subtitle={`${isAdu ? "ADUs" : "5+ unit buildings"} · cities with at least ${MIN_SAMPLE} projects`} icon={BarChart3} />
           <div className="py-5 pl-10 pr-5">
             {benchmark.length > 0 ? <CityBars data={benchmark} highlightId={city.id} /> : <p className="text-[13px] text-ink-2">No city has enough APR data for this project type.</p>}
@@ -138,7 +138,7 @@ ${project.applicant.email} · ${project.applicant.phone}
             </Disclaimer>
           </div>
         </Card>
-        <Card className="lg:col-span-2">
+        <Card className="@4xl:col-span-2">
           <CardHeader
             title="Who owns the delay?"
             subtitle={`${elapsed} days elapsed · ILLUSTRATIVE split (fixed 6 external / 9 applicant days, rest city); no real attribution data yet`}
@@ -181,7 +181,7 @@ ${project.applicant.email} · ${project.applicant.phone}
         />
         <div className="p-5">
           {!overdue && !showDraft ? (
-            <div className="flex flex-col items-start gap-3 rounded-xl bg-plane p-5 sm:flex-row sm:items-center">
+            <div className="flex flex-col items-start gap-3 rounded-xl bg-plane p-5 @xl:flex-row @xl:items-center">
               <Lock className="size-5 text-muted" />
               <p className="flex-1 text-[13.5px] text-ink-2">
                 The city is still inside its window. The notice becomes actionable on <span className="font-semibold text-ink">{prettyDate(addDays(submittedDate, decisionLimit + 1))}</span>.

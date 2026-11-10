@@ -23,7 +23,7 @@ function Row({ label, hint, children, highlight }: { label: string; hint?: strin
     <motion.div
       layout
       className={cn(
-        "flex flex-col gap-2 rounded-xl px-3 py-2.5 transition-colors sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col gap-2 rounded-xl px-3 py-2.5 transition-colors @xl:flex-row @xl:items-center @xl:justify-between",
         highlight ? "bg-warning/10 ring-1 ring-warning/40" : "",
       )}
     >
@@ -66,13 +66,13 @@ export default function IntakePage() {
         <VerdictHero evaluation={ev} />
       </motion.div>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_400px]">
+      <div className="grid grid-cols-1 gap-5 @4xl:grid-cols-[1fr_400px]">
         {/* ---------- Form ---------- */}
         <div className="space-y-5">
           <Card>
             <CardHeader title="Project & jurisdiction" icon={MapPin} subtitle="Typology determines which statutes apply." />
-            <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
-              <div className="sm:col-span-2">
+            <div className="grid grid-cols-1 gap-4 p-5 @xl:grid-cols-2">
+              <div className="@xl:col-span-2">
                 <span className="mb-1.5 block text-[13px] font-medium text-ink-2">Housing typology</span>
                 <Segmented<ProjectType>
                   id="ptype"
@@ -105,7 +105,7 @@ export default function IntakePage() {
                 </select>
               </label>
               <TextField label="APN" value={p.apn} onChange={(apn) => update({ apn })} />
-              <div className="sm:col-span-2">
+              <div className="@xl:col-span-2">
                 <TextField label="Address" value={p.address} onChange={(address) => update({ address })} />
               </div>
               <NumberField label="Lot area" unit="sq ft" value={p.lotArea} onChange={(lotArea) => update({ lotArea })} />
@@ -168,7 +168,7 @@ export default function IntakePage() {
 
           <Card>
             <CardHeader title="Proposed design" icon={Ruler} subtitle="Drag to test — the verdict updates live." />
-            <div className="grid grid-cols-1 gap-x-8 gap-y-7 p-5 pb-8 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-x-8 gap-y-7 p-5 pb-8 @xl:grid-cols-2">
               <Slider
                 label="Units"
                 value={p.units}
@@ -208,7 +208,7 @@ export default function IntakePage() {
         </div>
 
         {/* ---------- Live results ---------- */}
-        <div className="space-y-5 lg:sticky lg:top-20 lg:self-start">
+        <div className="space-y-5 @4xl:sticky @4xl:top-6 @4xl:self-start">
           <AnimatePresence initial={false}>
             {ev.followUps.length > 0 && (
               <motion.div

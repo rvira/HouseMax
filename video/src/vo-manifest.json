@@ -1,0 +1,56 @@
+{
+  "voice": "af_heart",
+  "speed": 0.96,
+  "model": "Kokoro-82M-v1.0 (fp32)",
+  "lines": {
+    "reveal": {
+      "file": "vo/reveal.wav",
+      "seconds": 6.108,
+      "endFrame": 204,
+      "sceneFrames": 240,
+      "fits": true
+    },
+    "violation": {
+      "file": "vo/violation.wav",
+      "seconds": 5.85,
+      "endFrame": 194,
+      "sceneFrames": 270,
+      "fits": true
+    },
+    "flip": {
+      "file": "vo/flip.wav",
+      "seconds": 6.751,
+      "endFrame": 217,
+      "sceneFrames": 270,
+      "fits": true
+    },
+    "radar": {
+      "file": "vo/radar.wav",
+      "seconds": 6.011,
+      "endFrame": 195,
+      "sceneFrames": 270,
+      "fits": true
+    },
+    "clocks": {
+      "file": "vo/clocks.wav",
+      "seconds": 5.388,
+      "endFrame": 176,
+      "sceneFrames": 270,
+      "fits": true
+    },
+    "packet": {
+      "file": "vo/packet.wav",
+      "seconds": 4.47,
+      "endFrame": 147,
+      "sceneFrames": 240,
+      "fits": true
+    },
+    "outro": {
+      "file": "vo/outro.wav",
+      "seconds": 2.301,
+      "endFrame": 166,
+      "sceneFrames": 240,
+      "fits": true
+    }
+  }
+}

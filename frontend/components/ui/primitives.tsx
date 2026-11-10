@@ -73,7 +73,7 @@ export function Page({ children }: { children: ReactNode }) {
 
 export function PageTitle({ eyebrow, title, description, right }: { eyebrow: string; title: string; description: string; right?: ReactNode }) {
   return (
-    <motion.div variants={fadeUp} className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+    <motion.div variants={fadeUp} className="mb-6 flex flex-col gap-4 @2xl:flex-row @2xl:items-end @2xl:justify-between">
       <div>
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-brand-600">{eyebrow}</p>
         <h1 className="mt-1 text-2xl font-semibold tracking-tight text-ink md:text-[28px]">{title}</h1>

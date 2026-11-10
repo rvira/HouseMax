@@ -2,8 +2,9 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowRight, Calculator, CheckCircle2, LayoutTemplate, PartyPopper, Repeat2, Wand2, XCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useProject } from "@/lib/store";
+import { useSceneStore } from "@/lib/scene/store";
 import { PLANS, getCity } from "@/lib/data";
 import { VERDICT_META, carryingCost, evaluate, findFlips, reviewDays } from "@/lib/by-right-engine";
 import { APPROVAL_MEDIANS, REVIEW_PENALTIES } from "@/lib/benchmarks";
@@ -58,6 +59,20 @@ export default function FlipPage() {
   const scenario: ProjectInput = activeFlips.reduce<ProjectInput>((acc, f) => ({ ...acc, ...f.patch }), project);
   const after = evaluate(scenario);
 
+  // Show the flipped design as a ghost in the 3D stage (only when it changes the massing).
+  const setGhost = useSceneStore((st) => st.setGhost);
+  const geometryChanged =
+    project.type === "ADU_DETACHED" &&
+    (scenario.height !== project.height || scenario.sqft !== project.sqft || scenario.rearSetback !== project.rearSetback || scenario.sideSetback !== project.sideSetback);
+  useEffect(() => {
+    setGhost(
+      geometryChanged
+        ? { aduHeight: scenario.height, sqft: scenario.sqft, aduRearOffset: scenario.rearSetback, aduSideOffset: scenario.sideSetback }
+        : null,
+    );
+  }, [geometryChanged, scenario.height, scenario.sqft, scenario.rearSetback, scenario.sideSetback, setGhost]);
+  useEffect(() => () => setGhost(null), [setGhost]);
+
   // ADU baseline = the statutory decision window (60 days from a complete application, Gov. Code § 66317(a)(3)).
   // No measured city approval time exists in the APR data (no application dates).
   const baseDays = project.type === "ADU_DETACHED" ? 60 : Math.round((APPROVAL_MEDIANS.ministerialLow + APPROVAL_MEDIANS.ministerialHigh) / 2);
@@ -111,7 +126,7 @@ export default function FlipPage() {
         }
       />
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_380px]">
+      <div className="grid grid-cols-1 gap-5 @4xl:grid-cols-[1fr_380px]">
         <div className="space-y-5">
           <Card>
             <CardHeader title="By-Right Flip" subtitle="Toggle changes to see the verdict move." icon={Repeat2} />
@@ -213,9 +228,9 @@ export default function FlipPage() {
 
           <Card>
             <CardHeader title="Pre-Approved Plan Matcher" subtitle={`Standard plans for ${city.name} that skip bespoke plan check.`} icon={LayoutTemplate} />
-            <div className="grid grid-cols-1 gap-3 p-5 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 p-5 @xl:grid-cols-2">
               {cityPlans.length === 0 && <p className="text-sm text-ink-2">No pre-approved plan catalog registered for {city.name}.</p>}
-              {project.type !== "ADU_DETACHED" && cityPlans.length > 0 && <p className="text-sm text-ink-2 sm:col-span-2">Pre-approved catalogs cover ADUs only.</p>}
+              {project.type !== "ADU_DETACHED" && cityPlans.length > 0 && <p className="text-sm text-ink-2 @xl:col-span-2">Pre-approved catalogs cover ADUs only.</p>}
               {project.type === "ADU_DETACHED" &&
                 cityPlans.map((pl, i) => {
                   const checks = [
@@ -266,7 +281,7 @@ export default function FlipPage() {
         </div>
 
         {/* Cost of Discretion */}
-        <div className="space-y-5 lg:sticky lg:top-20 lg:self-start">
+        <div className="space-y-5 @4xl:sticky @4xl:top-6 @4xl:self-start">
           <Card className="overflow-hidden">
             <div className="bg-gradient-to-br from-[#0e1424] to-[#1d2b52] p-5 text-white">
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-white/60">Cost of Discretion</p>

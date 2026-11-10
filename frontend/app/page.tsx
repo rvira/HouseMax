@@ -102,7 +102,7 @@ export default function Overview() {
         ))}
       </motion.div>
 
-      <motion.div variants={stagger} className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <motion.div variants={stagger} className="mt-6 grid grid-cols-1 gap-4 @xl:grid-cols-2 @5xl:grid-cols-4">
         <Stat label="Review days avoidable" icon={CalendarClock} hint={<span>vs. discretionary pipeline · LA baseline</span>}>
           <AnimatedNumber value={avoidable} />
           <span className="ml-1 text-base font-medium text-muted">days</span>
@@ -120,15 +120,15 @@ export default function Overview() {
         </Stat>
       </motion.div>
 
-      <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
+      <div className="mt-6 grid grid-cols-1 gap-4 @4xl:grid-cols-5">
+        <Card className="@4xl:col-span-3">
           <CardHeader title="Where California permits stall" subtitle="Median cumulative days through the review pipeline" icon={CalendarClock} />
           <div className="px-6 pb-4">
             <PipelineSteps stages={PIPELINE_STAGES} />
             <Disclaimer>Source: {PIPELINE_SOURCE}. Excludes non-profit developer tracks.</Disclaimer>
           </div>
         </Card>
-        <Card className="lg:col-span-2">
+        <Card className="@4xl:col-span-2">
           <CardHeader title="By-right is ~40% faster" subtitle="Median approval days, Los Angeles baseline" icon={Repeat2} />
           <div className="space-y-4 px-5 pb-5 pt-4">
             {[
@@ -159,7 +159,7 @@ export default function Overview() {
       <motion.h2 variants={fadeUp} className="mb-3 mt-8 text-sm font-semibold uppercase tracking-[0.12em] text-ink-2">
         Demo walkthrough
       </motion.h2>
-      <motion.div variants={stagger} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <motion.div variants={stagger} className="grid grid-cols-1 gap-4 @xl:grid-cols-2 @5xl:grid-cols-4">
         {STEPS.map((s, i) => (
           <motion.div key={s.href} variants={fadeUp} whileHover={{ y: -4 }} transition={{ type: "spring", stiffness: 400, damping: 25 }}>
             <Link

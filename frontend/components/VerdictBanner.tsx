@@ -104,7 +104,7 @@ export function VerdictHero({ evaluation }: { evaluation: Evaluation }) {
         transition={{ duration: 0.9 }}
       />
       <div className="pointer-events-none absolute inset-0 bg-grid opacity-20" />
-      <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+      <div className="relative flex flex-col gap-5 @2xl:flex-row @2xl:items-center @2xl:justify-between">
         <div className="flex items-start gap-4">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
