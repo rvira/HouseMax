@@ -37,7 +37,7 @@ A Next.js 16 app (`frontend/`) with a backend in the same app (`frontend/app/api
 
 **Demo video:**
 
-[Demo Video](https://github.com/WinstonTa/HouseMax/issues/3)
+[Demo Video](https://github.com/rvira/HouseMax/blob/main/byright-demo.mp4)
 
 ### Demo walkthrough
 
